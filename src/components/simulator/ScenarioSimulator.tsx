@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useFinance } from '@/context/FinanceContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -6,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ArrowRight, PlayCircle, CheckCircle, TrendingUp, Landmark, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 type SimulationAdjustments = {
   income: number;
