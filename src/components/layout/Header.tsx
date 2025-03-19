@@ -10,7 +10,7 @@ import {
   Menu,
   LogOut
 } from 'lucide-react';
-import { useMobileCheck } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,7 @@ import {
 import { toast } from 'sonner';
 
 const Header = () => {
-  const isMobile = useMobileCheck();
+  const isMobile = useIsMobile();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 

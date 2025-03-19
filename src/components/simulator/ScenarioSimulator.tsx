@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useFinance } from '@/context/FinanceContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -33,8 +32,8 @@ const ScenarioSimulator = () => {
     }));
   };
 
-  const handleRunSimulation = () => {
-    const result = runScenario({
+  const handleRunSimulation = async () => {
+    const result = await runScenario({
       income: adjustments.income,
       expenses: adjustments.expenses,
       savings: adjustments.savings,
