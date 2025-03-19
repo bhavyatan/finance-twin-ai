@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,28 +8,54 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import PageTransition from '@/components/layout/PageTransition';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Check for error parameters in URL (from redirect)
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const errorParam = queryParams.get('error');
+    const errorDescription = queryParams.get('error_description');
+    
+    if (errorParam) {
+      setError(errorDescription || 'An authentication error occurred');
+      toast.error('Authentication error', {
+        description: errorDescription || 'An error occurred during authentication'
+      });
+    }
+  }, [location]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
     try {
+      // Get current site URL to use for redirects
+      const redirectTo = window.location.origin + '/auth';
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: redirectTo
+        }
       });
       
       if (error) throw error;
       
       toast.success('Sign up successful! Please check your email for verification.');
     } catch (error: any) {
+      setError(error.message || 'An error occurred during sign up');
       toast.error(error.message || 'An error occurred during sign up');
     } finally {
       setLoading(false);
@@ -39,6 +65,7 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -51,6 +78,7 @@ const Auth = () => {
       navigate('/dashboard');
       toast.success('Signed in successfully!');
     } catch (error: any) {
+      setError(error.message || 'An error occurred during sign in');
       toast.error(error.message || 'An error occurred during sign in');
     } finally {
       setLoading(false);
@@ -65,6 +93,15 @@ const Auth = () => {
             <CardTitle className="text-2xl font-bold">Financial Digital Twin</CardTitle>
             <CardDescription>Sign in to your account or create a new one</CardDescription>
           </CardHeader>
+          
+          {error && (
+            <div className="px-6">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </div>
+          )}
           
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -131,10 +168,13 @@ const Auth = () => {
                     <p className="text-xs text-muted-foreground">Password must be at least 6 characters long</p>
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col space-y-4">
                   <Button className="w-full" type="submit" disabled={loading}>
                     {loading ? 'Creating account...' : 'Create Account'}
                   </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    After signing up, you'll need to verify your email before signing in.
+                  </p>
                 </CardFooter>
               </form>
             </TabsContent>
