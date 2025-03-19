@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Target, CalendarDays, DollarSign, Loader2 } from 'lucide-react';
+import { PlusCircle, Target, CalendarDays, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const GoalTracker = () => {
-  const { goals, createGoal, updateGoal, isLoading } = useFinance();
+  const { goals, createGoal, updateGoal } = useFinance();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [contributionDialogOpen, setContributionDialogOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState('');
@@ -79,15 +79,6 @@ const GoalTracker = () => {
     };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-64 w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading your goals...</span>
-      </div>
-    );
-  }
 
   return (
     <>

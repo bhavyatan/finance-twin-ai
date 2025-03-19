@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useFinance } from '@/context/FinanceContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -32,22 +33,17 @@ const ScenarioSimulator = () => {
     }));
   };
 
-  const handleRunSimulation = async () => {
-    try {
-      const result = await runScenario({
-        income: adjustments.income,
-        expenses: adjustments.expenses,
-        savings: adjustments.savings,
-        investments: { return: adjustments.investmentReturn },
-      });
-      
-      setActiveScenario(result);
-      setSimulationResult(result);
-      setIsCustomizing(false);
-    } catch (error) {
-      console.error("Error running simulation:", error);
-      toast.error("Failed to run simulation");
-    }
+  const handleRunSimulation = () => {
+    const result = runScenario({
+      income: adjustments.income,
+      expenses: adjustments.expenses,
+      savings: adjustments.savings,
+      investments: { return: adjustments.investmentReturn },
+    });
+    
+    setActiveScenario(result);
+    setSimulationResult(result);
+    setIsCustomizing(false);
   };
 
   return (
