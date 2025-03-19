@@ -33,16 +33,21 @@ const ScenarioSimulator = () => {
   };
 
   const handleRunSimulation = async () => {
-    const result = await runScenario({
-      income: adjustments.income,
-      expenses: adjustments.expenses,
-      savings: adjustments.savings,
-      investments: { return: adjustments.investmentReturn },
-    });
-    
-    setActiveScenario(result);
-    setSimulationResult(result);
-    setIsCustomizing(false);
+    try {
+      const result = await runScenario({
+        income: adjustments.income,
+        expenses: adjustments.expenses,
+        savings: adjustments.savings,
+        investments: { return: adjustments.investmentReturn },
+      });
+      
+      setActiveScenario(result);
+      setSimulationResult(result);
+      setIsCustomizing(false);
+    } catch (error) {
+      console.error("Error running simulation:", error);
+      toast.error("Failed to run simulation");
+    }
   };
 
   return (

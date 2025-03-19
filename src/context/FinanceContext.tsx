@@ -226,17 +226,41 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (scenariosError) throw scenariosError;
 
-      const formattedScenarios: SimulationScenario[] = scenariosData.map(scenario => ({
-        id: scenario.id,
-        name: scenario.name,
-        description: scenario.description || '',
-        adjustments: typeof scenario.adjustments === 'string' 
-          ? JSON.parse(scenario.adjustments) 
-          : scenario.adjustments as SimulationScenario['adjustments'],
-        impact: typeof scenario.impact === 'string'
-          ? JSON.parse(scenario.impact)
-          : scenario.impact as SimulationScenario['impact'],
-      }));
+      const formattedScenarios: SimulationScenario[] = scenariosData.map(scenario => {
+        let adjustmentsObj: SimulationScenario['adjustments'] = {};
+        if (typeof scenario.adjustments === 'string') {
+          try {
+            adjustmentsObj = JSON.parse(scenario.adjustments);
+          } catch (e) {
+            console.error('Error parsing adjustments:', e);
+          }
+        } else {
+          adjustmentsObj = scenario.adjustments as SimulationScenario['adjustments'];
+        }
+
+        let impactObj: SimulationScenario['impact'] = {
+          netWorth: 0,
+          savingsAfter5Years: 0,
+          retirementAge: 0
+        };
+        if (typeof scenario.impact === 'string') {
+          try {
+            impactObj = JSON.parse(scenario.impact);
+          } catch (e) {
+            console.error('Error parsing impact:', e);
+          }
+        } else {
+          impactObj = scenario.impact as SimulationScenario['impact'];
+        }
+
+        return {
+          id: scenario.id,
+          name: scenario.name,
+          description: scenario.description || '',
+          adjustments: adjustmentsObj,
+          impact: impactObj,
+        };
+      });
 
       setScenarios(formattedScenarios.length > 0 ? formattedScenarios : [
         {
@@ -556,16 +580,38 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (error) throw error;
       
       if (data && data[0]) {
+        let scenarioAdjustments: SimulationScenario['adjustments'] = {};
+        if (typeof data[0].adjustments === 'string') {
+          try {
+            scenarioAdjustments = JSON.parse(data[0].adjustments);
+          } catch (e) {
+            console.error('Error parsing adjustments:', e);
+          }
+        } else {
+          scenarioAdjustments = data[0].adjustments as SimulationScenario['adjustments'];
+        }
+
+        let scenarioImpact: SimulationScenario['impact'] = {
+          netWorth: 0,
+          savingsAfter5Years: 0,
+          retirementAge: 0
+        };
+        if (typeof data[0].impact === 'string') {
+          try {
+            scenarioImpact = JSON.parse(data[0].impact);
+          } catch (e) {
+            console.error('Error parsing impact:', e);
+          }
+        } else {
+          scenarioImpact = data[0].impact as SimulationScenario['impact'];
+        }
+
         const newScenario: SimulationScenario = {
           id: data[0].id,
           name: data[0].name,
           description: data[0].description || '',
-          adjustments: typeof data[0].adjustments === 'string'
-            ? JSON.parse(data[0].adjustments)
-            : data[0].adjustments as SimulationScenario['adjustments'],
-          impact: typeof data[0].impact === 'string'
-            ? JSON.parse(data[0].impact)
-            : data[0].impact as SimulationScenario['impact'],
+          adjustments: scenarioAdjustments,
+          impact: scenarioImpact,
         };
         
         setScenarios(prev => [...prev, newScenario]);
