@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import UserMenu from '@/components/auth/UserMenu';
 
 const navItems = [
   { 
@@ -40,6 +42,7 @@ const Header = () => {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -81,21 +84,41 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
-          {navItems.map((item) => (
-            <Link 
-              key={item.path} 
-              to={item.path}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                location.pathname === item.path
-                  ? "bg-primary/10 text-primary"
-                  : "text-foreground/70 hover:text-primary hover:bg-primary/5"
-              )}
-            >
-              {item.icon}
-              {item.name}
-            </Link>
-          ))}
+          {isAuthenticated ? (
+            <>
+              {navItems.map((item) => (
+                <Link 
+                  key={item.path} 
+                  to={item.path}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    location.pathname === item.path
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground/70 hover:text-primary hover:bg-primary/5"
+                  )}
+                >
+                  {item.icon}
+                  {item.name}
+                </Link>
+              ))}
+              <UserMenu />
+            </>
+          ) : (
+            <>
+              <Link 
+                to="/sign-in" 
+                className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors text-foreground/70 hover:text-primary hover:bg-primary/5"
+              >
+                Sign In
+              </Link>
+              <Link 
+                to="/sign-up" 
+                className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -116,24 +139,57 @@ const Header = () => {
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
         <nav className="md:hidden bg-background border-t">
-          {navItems.map((item) => (
-            <Link 
-              key={item.path} 
-              to={item.path}
-              className={cn(
-                "flex items-center justify-between px-6 py-4 border-b",
-                location.pathname === item.path
-                  ? "bg-primary/5 text-primary font-medium"
-                  : "text-foreground/80"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                {item.icon}
-                {item.name}
+          {isAuthenticated ? (
+            <>
+              {navItems.map((item) => (
+                <Link 
+                  key={item.path} 
+                  to={item.path}
+                  className={cn(
+                    "flex items-center justify-between px-6 py-4 border-b",
+                    location.pathname === item.path
+                      ? "bg-primary/5 text-primary font-medium"
+                      : "text-foreground/80"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    {item.icon}
+                    {item.name}
+                  </div>
+                  <ChevronRight className="h-4 w-4 opacity-70" />
+                </Link>
+              ))}
+              <div className="px-6 py-4 border-b">
+                <Button
+                  variant="destructive" 
+                  className="w-full"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    window.location.href = '/sign-out';
+                  }}
+                >
+                  Sign Out
+                </Button>
               </div>
-              <ChevronRight className="h-4 w-4 opacity-70" />
-            </Link>
-          ))}
+            </>
+          ) : (
+            <>
+              <Link 
+                to="/sign-in"
+                className="flex items-center justify-between px-6 py-4 border-b text-foreground/80"
+              >
+                <span>Sign In</span>
+                <ChevronRight className="h-4 w-4 opacity-70" />
+              </Link>
+              <Link 
+                to="/sign-up"
+                className="flex items-center justify-between px-6 py-4 border-b text-foreground/80"
+              >
+                <span>Sign Up</span>
+                <ChevronRight className="h-4 w-4 opacity-70" />
+              </Link>
+            </>
+          )}
         </nav>
       )}
     </header>
