@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserCircle, Briefcase, Home, Wallet, Users, GraduationCap, Heart } from 'lucide-react';
+import { toast } from 'sonner';
 
 type ProfileSectionProps = {
   title: string;
@@ -51,6 +52,48 @@ const TwinProfile = () => {
     { id: 2, event: 'Change Career', year: '2025', completed: false },
     { id: 3, event: 'Start a Family', year: '2026', completed: false },
   ]);
+
+  const [householdInfo, setHouseholdInfo] = useState({
+    maritalStatus: 'single',
+    householdSize: '1',
+    dependents: '0',
+    educationPlanning: 'none',
+  });
+
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleUpdateProfile = async () => {
+    try {
+      setIsUpdating(true);
+      
+      // Simulate API call with a timeout
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Combine all profile data for potential API submission
+      const profileData = {
+        personal: personalInfo,
+        financial: financialProfile,
+        lifeEvents: lifeEvents,
+        household: householdInfo,
+      };
+      
+      // Log the data that would be sent to an API
+      console.log('Profile data updated:', profileData);
+
+      // Show success notification
+      toast.success('Profile successfully updated', {
+        description: 'Your digital twin profile has been saved.',
+      });
+
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile', {
+        description: 'Please try again later.',
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -315,7 +358,10 @@ const TwinProfile = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Marital Status</label>
-              <Select defaultValue="single">
+              <Select 
+                value={householdInfo.maritalStatus}
+                onValueChange={(value) => setHouseholdInfo({ ...householdInfo, maritalStatus: value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -331,7 +377,10 @@ const TwinProfile = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Household Size</label>
-              <Select defaultValue="1">
+              <Select 
+                value={householdInfo.householdSize}
+                onValueChange={(value) => setHouseholdInfo({ ...householdInfo, householdSize: value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select size" />
                 </SelectTrigger>
@@ -347,7 +396,10 @@ const TwinProfile = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Dependents</label>
-              <Select defaultValue="0">
+              <Select 
+                value={householdInfo.dependents}
+                onValueChange={(value) => setHouseholdInfo({ ...householdInfo, dependents: value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select number" />
                 </SelectTrigger>
@@ -363,7 +415,10 @@ const TwinProfile = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Education Planning</label>
-              <Select defaultValue="none">
+              <Select 
+                value={householdInfo.educationPlanning}
+                onValueChange={(value) => setHouseholdInfo({ ...householdInfo, educationPlanning: value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select planning" />
                 </SelectTrigger>
@@ -378,8 +433,12 @@ const TwinProfile = () => {
           </div>
 
           <div className="mt-4 border-t pt-4">
-            <Button className="w-full">
-              Update Profile
+            <Button 
+              className="w-full" 
+              onClick={handleUpdateProfile}
+              disabled={isUpdating}
+            >
+              {isUpdating ? 'Updating...' : 'Update Profile'}
             </Button>
           </div>
         </ProfileSection>
