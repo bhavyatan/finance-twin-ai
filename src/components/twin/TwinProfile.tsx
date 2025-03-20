@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserCircle, Briefcase, Wallet, Users, Heart } from 'lucide-react';
+import { UserCircle, Briefcase, Wallet, Users, Heart, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 type ProfileSectionProps = {
   title: string;
@@ -89,6 +91,8 @@ const TwinProfile = () => {
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState({ event: '', year: '' });
 
   useEffect(() => {
     if (!user) return;
@@ -141,6 +145,50 @@ const TwinProfile = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleAddLifeEvent = () => {
+    if (!newEvent.event.trim() || !newEvent.year.trim()) {
+      toast.error('Please fill out all fields');
+      return;
+    }
+
+    const currentYear = new Date().getFullYear();
+    const eventYear = parseInt(newEvent.year);
+    
+    if (isNaN(eventYear) || eventYear < currentYear || eventYear > currentYear + 50) {
+      toast.error('Please enter a valid year');
+      return;
+    }
+
+    const newId = Math.max(0, ...lifeEvents.map(event => event.id)) + 1;
+    
+    setLifeEvents([
+      ...lifeEvents,
+      { 
+        id: newId, 
+        event: newEvent.event, 
+        year: newEvent.year, 
+        completed: false 
+      }
+    ]);
+    
+    setNewEvent({ event: '', year: '' });
+    setIsAddEventOpen(false);
+    
+    toast.success('New life event added');
+  };
+
+  const handleEventStatusChange = (id: number, status: string) => {
+    setLifeEvents(lifeEvents.map(event => {
+      if (event.id === id) {
+        return { 
+          ...event, 
+          completed: status === 'completed' 
+        };
+      }
+      return event;
+    }));
   };
 
   return (
@@ -375,7 +423,10 @@ const TwinProfile = () => {
                     Completed
                   </Button>
                 ) : (
-                  <Select defaultValue="planning">
+                  <Select 
+                    defaultValue="planning"
+                    onValueChange={(value) => handleEventStatusChange(event.id, value)}
+                  >
                     <SelectTrigger className="w-[120px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
@@ -391,8 +442,12 @@ const TwinProfile = () => {
             </div>
           ))}
 
-          <Button variant="outline" className="w-full">
-            Add Life Event
+          <Button 
+            variant="outline" 
+            className="w-full" 
+            onClick={() => setIsAddEventOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" /> Add Life Event
           </Button>
         </div>
       </ProfileSection>
@@ -491,6 +546,43 @@ const TwinProfile = () => {
           </div>
         </ProfileSection>
       </div>
+
+      <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Life Event</DialogTitle>
+            <DialogDescription>
+              Add a significant life event that may impact your financial planning.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Event</label>
+              <Textarea 
+                placeholder="e.g., Buy a house, Start a business, etc."
+                value={newEvent.event}
+                onChange={(e) => setNewEvent({ ...newEvent, event: e.target.value })}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Expected Year</label>
+              <Input 
+                type="text"
+                placeholder={`${new Date().getFullYear()} or later`}
+                value={newEvent.year}
+                onChange={(e) => setNewEvent({ ...newEvent, year: e.target.value })}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddEventOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddLifeEvent}>Add Event</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
