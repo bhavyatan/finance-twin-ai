@@ -10,6 +10,11 @@ export interface User {
   name?: string;
 }
 
+// Store registered users
+interface RegisteredUser extends User {
+  password: string;
+}
+
 // Define the Auth context type
 interface AuthContextType {
   user: User | null;
@@ -55,9 +60,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // In a real app, this would be an API call
       // Simulating API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       
-      // Simple validation (in a real app, this would be server-side)
+      // Default demo user
       if (email === 'demo@example.com' && password === 'password') {
         const userData: User = {
           id: '1',
@@ -68,6 +73,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Store user data
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
+        
+        toast.success('Signed in successfully!');
+        navigate('/dashboard');
+        return;
+      }
+      
+      // Check for registered users
+      const registeredUsersJson = localStorage.getItem('registeredUsers');
+      const registeredUsers: RegisteredUser[] = registeredUsersJson 
+        ? JSON.parse(registeredUsersJson) 
+        : [];
+      
+      const matchedUser = registeredUsers.find(
+        user => user.email === email && user.password === password
+      );
+      
+      if (matchedUser) {
+        // Don't send password to client
+        const { password: _, ...userWithoutPassword } = matchedUser;
+        
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        setUser(userWithoutPassword);
         
         toast.success('Signed in successfully!');
         navigate('/dashboard');
@@ -91,18 +119,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // In a real app, this would be an API call
       // Simulating API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       
-      // Create a new user (in a real app, this would save to a database)
-      const userData: User = {
+      // Get existing registered users or initialize empty array
+      const registeredUsersJson = localStorage.getItem('registeredUsers');
+      const registeredUsers: RegisteredUser[] = registeredUsersJson 
+        ? JSON.parse(registeredUsersJson) 
+        : [];
+      
+      // Check if user already exists
+      if (registeredUsers.some(user => user.email === email)) {
+        throw new Error('User with this email already exists');
+      }
+      
+      // Create a new user
+      const newUser: RegisteredUser = {
         id: Date.now().toString(),
         email,
-        name
+        name,
+        password // In a real app, this would be hashed!
       };
       
-      // Store user data
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
+      // Store in registered users
+      registeredUsers.push(newUser);
+      localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+      
+      // Don't send password to client
+      const { password: _, ...userWithoutPassword } = newUser;
+      
+      // Auto sign-in after registration
+      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      setUser(userWithoutPassword);
       
       toast.success('Account created successfully!');
       navigate('/dashboard');
