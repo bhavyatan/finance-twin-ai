@@ -1,12 +1,12 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserCircle, Briefcase, Home, Wallet, Users, GraduationCap, Heart } from 'lucide-react';
+import { UserCircle, Briefcase, Wallet, Users, Heart } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 type ProfileSectionProps = {
   title: string;
@@ -32,7 +32,35 @@ const ProfileSection = ({ title, description, icon, children }: ProfileSectionPr
   </Card>
 );
 
+interface ProfileData {
+  personal: {
+    name: string;
+    age: number;
+    occupation: string;
+    annualIncome: number;
+  };
+  financial: {
+    riskTolerance: number;
+    savingsRate: number;
+    retirementAge: number;
+    investmentStyle: string;
+  };
+  lifeEvents: Array<{
+    id: number;
+    event: string;
+    year: string;
+    completed: boolean;
+  }>;
+  household: {
+    maritalStatus: string;
+    householdSize: string;
+    dependents: string;
+    educationPlanning: string;
+  };
+}
+
 const TwinProfile = () => {
+  const { user } = useAuth();
   const [personalInfo, setPersonalInfo] = useState({
     name: 'Alex Johnson',
     age: 32,
@@ -62,25 +90,45 @@ const TwinProfile = () => {
 
   const [isUpdating, setIsUpdating] = useState(false);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const storageKey = `profile_${user.id}`;
+    const savedProfile = localStorage.getItem(storageKey);
+
+    if (savedProfile) {
+      try {
+        const profileData: ProfileData = JSON.parse(savedProfile);
+        setPersonalInfo(profileData.personal);
+        setFinancialProfile(profileData.financial);
+        setLifeEvents(profileData.lifeEvents);
+        setHouseholdInfo(profileData.household);
+      } catch (error) {
+        console.error('Error parsing saved profile:', error);
+      }
+    }
+  }, [user]);
+
   const handleUpdateProfile = async () => {
     try {
       setIsUpdating(true);
-      
-      // Simulate API call with a timeout
+
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Combine all profile data for potential API submission
-      const profileData = {
+      const profileData: ProfileData = {
         personal: personalInfo,
         financial: financialProfile,
         lifeEvents: lifeEvents,
         household: householdInfo,
       };
-      
-      // Log the data that would be sent to an API
+
+      if (user) {
+        const storageKey = `profile_${user.id}`;
+        localStorage.setItem(storageKey, JSON.stringify(profileData));
+      }
+
       console.log('Profile data updated:', profileData);
 
-      // Show success notification
       toast.success('Profile successfully updated', {
         description: 'Your digital twin profile has been saved.',
       });
