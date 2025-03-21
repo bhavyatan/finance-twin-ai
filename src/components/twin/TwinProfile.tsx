@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserCircle, Briefcase, Wallet, Users, Heart, Plus } from 'lucide-react';
+import { UserCircle, Briefcase, Home, Wallet, Users, GraduationCap, Heart } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 
 type ProfileSectionProps = {
   title: string;
@@ -34,35 +32,7 @@ const ProfileSection = ({ title, description, icon, children }: ProfileSectionPr
   </Card>
 );
 
-interface ProfileData {
-  personal: {
-    name: string;
-    age: number;
-    occupation: string;
-    annualIncome: number;
-  };
-  financial: {
-    riskTolerance: number;
-    savingsRate: number;
-    retirementAge: number;
-    investmentStyle: string;
-  };
-  lifeEvents: Array<{
-    id: number;
-    event: string;
-    year: string;
-    completed: boolean;
-  }>;
-  household: {
-    maritalStatus: string;
-    householdSize: string;
-    dependents: string;
-    educationPlanning: string;
-  };
-}
-
 const TwinProfile = () => {
-  const { user } = useAuth();
   const [personalInfo, setPersonalInfo] = useState({
     name: 'Alex Johnson',
     age: 32,
@@ -91,48 +61,26 @@ const TwinProfile = () => {
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({ event: '', year: '' });
-
-  useEffect(() => {
-    if (!user) return;
-
-    const storageKey = `profile_${user.id}`;
-    const savedProfile = localStorage.getItem(storageKey);
-
-    if (savedProfile) {
-      try {
-        const profileData: ProfileData = JSON.parse(savedProfile);
-        setPersonalInfo(profileData.personal);
-        setFinancialProfile(profileData.financial);
-        setLifeEvents(profileData.lifeEvents);
-        setHouseholdInfo(profileData.household);
-      } catch (error) {
-        console.error('Error parsing saved profile:', error);
-      }
-    }
-  }, [user]);
 
   const handleUpdateProfile = async () => {
     try {
       setIsUpdating(true);
-
+      
+      // Simulate API call with a timeout
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      const profileData: ProfileData = {
+      // Combine all profile data for potential API submission
+      const profileData = {
         personal: personalInfo,
         financial: financialProfile,
         lifeEvents: lifeEvents,
         household: householdInfo,
       };
-
-      if (user) {
-        const storageKey = `profile_${user.id}`;
-        localStorage.setItem(storageKey, JSON.stringify(profileData));
-      }
-
+      
+      // Log the data that would be sent to an API
       console.log('Profile data updated:', profileData);
 
+      // Show success notification
       toast.success('Profile successfully updated', {
         description: 'Your digital twin profile has been saved.',
       });
@@ -145,50 +93,6 @@ const TwinProfile = () => {
     } finally {
       setIsUpdating(false);
     }
-  };
-
-  const handleAddLifeEvent = () => {
-    if (!newEvent.event.trim() || !newEvent.year.trim()) {
-      toast.error('Please fill out all fields');
-      return;
-    }
-
-    const currentYear = new Date().getFullYear();
-    const eventYear = parseInt(newEvent.year);
-    
-    if (isNaN(eventYear) || eventYear < currentYear || eventYear > currentYear + 50) {
-      toast.error('Please enter a valid year');
-      return;
-    }
-
-    const newId = Math.max(0, ...lifeEvents.map(event => event.id)) + 1;
-    
-    setLifeEvents([
-      ...lifeEvents,
-      { 
-        id: newId, 
-        event: newEvent.event, 
-        year: newEvent.year, 
-        completed: false 
-      }
-    ]);
-    
-    setNewEvent({ event: '', year: '' });
-    setIsAddEventOpen(false);
-    
-    toast.success('New life event added');
-  };
-
-  const handleEventStatusChange = (id: number, status: string) => {
-    setLifeEvents(lifeEvents.map(event => {
-      if (event.id === id) {
-        return { 
-          ...event, 
-          completed: status === 'completed' 
-        };
-      }
-      return event;
-    }));
   };
 
   return (
@@ -423,10 +327,7 @@ const TwinProfile = () => {
                     Completed
                   </Button>
                 ) : (
-                  <Select 
-                    defaultValue="planning"
-                    onValueChange={(value) => handleEventStatusChange(event.id, value)}
-                  >
+                  <Select defaultValue="planning">
                     <SelectTrigger className="w-[120px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
@@ -442,12 +343,8 @@ const TwinProfile = () => {
             </div>
           ))}
 
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={() => setIsAddEventOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" /> Add Life Event
+          <Button variant="outline" className="w-full">
+            Add Life Event
           </Button>
         </div>
       </ProfileSection>
@@ -546,43 +443,6 @@ const TwinProfile = () => {
           </div>
         </ProfileSection>
       </div>
-
-      <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Life Event</DialogTitle>
-            <DialogDescription>
-              Add a significant life event that may impact your financial planning.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Event</label>
-              <Textarea 
-                placeholder="e.g., Buy a house, Start a business, etc."
-                value={newEvent.event}
-                onChange={(e) => setNewEvent({ ...newEvent, event: e.target.value })}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Expected Year</label>
-              <Input 
-                type="text"
-                placeholder={`${new Date().getFullYear()} or later`}
-                value={newEvent.year}
-                onChange={(e) => setNewEvent({ ...newEvent, year: e.target.value })}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddEventOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddLifeEvent}>Add Event</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
