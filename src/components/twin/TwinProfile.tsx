@@ -1,10 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
 import { UserCircle, Briefcase, Home, Wallet, Users, GraduationCap, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,6 +15,14 @@ type ProfileSectionProps = {
   description: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+};
+
+type LifeEvent = {
+  id: number;
+  event: string;
+  year: string;
+  completed: boolean;
+  status: string;
 };
 
 const ProfileSection = ({ title, description, icon, children }: ProfileSectionProps) => (
@@ -33,43 +43,69 @@ const ProfileSection = ({ title, description, icon, children }: ProfileSectionPr
 );
 
 const TwinProfile = () => {
-  const [personalInfo, setPersonalInfo] = useState({
+  // Get user ID - for now we'll use a static ID, but this would come from auth
+  const userId = "user-123"; 
+  const profileKey = `financial-twin-profile-${userId}`;
+  
+  const defaultPersonalInfo = {
     name: 'Alex Johnson',
     age: 32,
     occupation: 'Software Engineer',
     annualIncome: 95000,
-  });
+  };
 
-  const [financialProfile, setFinancialProfile] = useState({
+  const defaultFinancialProfile = {
     riskTolerance: 65,
     savingsRate: 20,
     retirementAge: 60,
     investmentStyle: 'balanced',
-  });
+  };
 
-  const [lifeEvents, setLifeEvents] = useState([
-    { id: 1, event: 'Buy a House', year: '2024', completed: false },
-    { id: 2, event: 'Change Career', year: '2025', completed: false },
-    { id: 3, event: 'Start a Family', year: '2026', completed: false },
-  ]);
+  const defaultLifeEvents = [
+    { id: 1, event: 'Buy a House', year: '2024', completed: false, status: 'planning' },
+    { id: 2, event: 'Change Career', year: '2025', completed: false, status: 'planning' },
+    { id: 3, event: 'Start a Family', year: '2026', completed: false, status: 'planning' },
+  ];
 
-  const [householdInfo, setHouseholdInfo] = useState({
+  const defaultHouseholdInfo = {
     maritalStatus: 'single',
     householdSize: '1',
     dependents: '0',
     educationPlanning: 'none',
-  });
+  };
 
+  const [personalInfo, setPersonalInfo] = useState(defaultPersonalInfo);
+  const [financialProfile, setFinancialProfile] = useState(defaultFinancialProfile);
+  const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>(defaultLifeEvents);
+  const [householdInfo, setHouseholdInfo] = useState(defaultHouseholdInfo);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // New state for the add life event dialog
+  const [newLifeEvent, setNewLifeEvent] = useState({ event: '', year: new Date().getFullYear().toString() });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  // Load saved profile data on component mount
+  useEffect(() => {
+    const savedProfile = localStorage.getItem(profileKey);
+    if (savedProfile) {
+      try {
+        const parsedProfile = JSON.parse(savedProfile);
+        if (parsedProfile.personal) setPersonalInfo(parsedProfile.personal);
+        if (parsedProfile.financial) setFinancialProfile(parsedProfile.financial);
+        if (parsedProfile.lifeEvents) setLifeEvents(parsedProfile.lifeEvents);
+        if (parsedProfile.household) setHouseholdInfo(parsedProfile.household);
+      } catch (error) {
+        console.error('Error parsing saved profile data:', error);
+      }
+    }
+  }, [profileKey]);
 
   const handleUpdateProfile = async () => {
     try {
       setIsUpdating(true);
       
-      // Simulate API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Combine all profile data for potential API submission
+      // Combine all profile data for storage
       const profileData = {
         personal: personalInfo,
         financial: financialProfile,
@@ -77,8 +113,9 @@ const TwinProfile = () => {
         household: householdInfo,
       };
       
-      // Log the data that would be sent to an API
-      console.log('Profile data updated:', profileData);
+      // Save to localStorage
+      localStorage.setItem(profileKey, JSON.stringify(profileData));
+      console.log('Profile data updated and saved:', profileData);
 
       // Show success notification
       toast.success('Profile successfully updated', {
@@ -93,6 +130,62 @@ const TwinProfile = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  // Handle for adding a new life event
+  const handleAddLifeEvent = () => {
+    // Validate inputs
+    if (!newLifeEvent.event.trim()) {
+      setFormError('Please enter an event description');
+      return;
+    }
+
+    const yearNumber = parseInt(newLifeEvent.year);
+    const currentYear = new Date().getFullYear();
+    
+    if (isNaN(yearNumber) || yearNumber < currentYear) {
+      setFormError(`Year must be ${currentYear} or later`);
+      return;
+    }
+
+    // Add the new life event
+    const newId = lifeEvents.length > 0 
+      ? Math.max(...lifeEvents.map(event => event.id)) + 1 
+      : 1;
+      
+    const newEvent = {
+      id: newId,
+      event: newLifeEvent.event,
+      year: newLifeEvent.year,
+      completed: false,
+      status: 'planning'
+    };
+
+    setLifeEvents([...lifeEvents, newEvent]);
+    
+    // Reset form and close dialog
+    setNewLifeEvent({ event: '', year: new Date().getFullYear().toString() });
+    setFormError('');
+    setDialogOpen(false);
+
+    // Show success notification
+    toast.success('Life event added', {
+      description: `"${newEvent.event}" has been added to your life events.`,
+    });
+  };
+
+  // Handle for updating event status
+  const handleEventStatusChange = (id: number, status: string) => {
+    setLifeEvents(lifeEvents.map(event => {
+      if (event.id === id) {
+        return { 
+          ...event, 
+          status,
+          completed: status === 'completed'
+        };
+      }
+      return event;
+    }));
   };
 
   return (
@@ -322,30 +415,71 @@ const TwinProfile = () => {
                 <div className="text-sm text-muted-foreground">Expected: {event.year}</div>
               </div>
               <div>
-                {event.completed ? (
-                  <Button size="sm" variant="outline" disabled>
-                    Completed
-                  </Button>
-                ) : (
-                  <Select defaultValue="planning">
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="planning">Planning</SelectItem>
-                      <SelectItem value="in-progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="postponed">Postponed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select 
+                  value={event.status}
+                  onValueChange={(value) => handleEventStatusChange(event.id, value)}
+                >
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planning">Planning</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="postponed">Postponed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           ))}
 
-          <Button variant="outline" className="w-full">
-            Add Life Event
-          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full">
+                Add Life Event
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Life Event</DialogTitle>
+                <DialogDescription>
+                  Add a significant life event that will impact your financial planning.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="event">Event Description</Label>
+                  <Input
+                    id="event"
+                    placeholder="e.g., Buy a house, Start a business"
+                    value={newLifeEvent.event}
+                    onChange={(e) => setNewLifeEvent({ ...newLifeEvent, event: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="year">Expected Year</Label>
+                  <Input
+                    id="year"
+                    type="number"
+                    placeholder={new Date().getFullYear().toString()}
+                    value={newLifeEvent.year}
+                    onChange={(e) => setNewLifeEvent({ ...newLifeEvent, year: e.target.value })}
+                  />
+                </div>
+
+                {formError && (
+                  <div className="text-sm font-medium text-destructive">{formError}</div>
+                )}
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleAddLifeEvent}>Add Event</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </ProfileSection>
 
