@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -101,6 +100,30 @@ const TwinProfile = () => {
     }
   }, [profileKey]);
 
+  // Save profile data whenever lifeEvents state changes
+  useEffect(() => {
+    // Create a function to save the current state to localStorage
+    const saveProfileData = () => {
+      try {
+        const profileData = {
+          personal: personalInfo,
+          financial: financialProfile,
+          lifeEvents: lifeEvents,
+          household: householdInfo,
+        };
+        
+        localStorage.setItem(profileKey, JSON.stringify(profileData));
+      } catch (error) {
+        console.error('Error saving profile data:', error);
+      }
+    };
+    
+    // Only save if lifeEvents is not the default (meaning the component has initialized)
+    if (JSON.stringify(lifeEvents) !== JSON.stringify(defaultLifeEvents)) {
+      saveProfileData();
+    }
+  }, [lifeEvents, personalInfo, financialProfile, householdInfo, profileKey, defaultLifeEvents]);
+
   const handleUpdateProfile = async () => {
     try {
       setIsUpdating(true);
@@ -161,7 +184,19 @@ const TwinProfile = () => {
       status: 'planning'
     };
 
-    setLifeEvents([...lifeEvents, newEvent]);
+    // Create a new array with the event added, then update state
+    const updatedLifeEvents = [...lifeEvents, newEvent];
+    setLifeEvents(updatedLifeEvents);
+    
+    // Save immediately to localStorage to ensure persistence
+    const profileData = {
+      personal: personalInfo,
+      financial: financialProfile,
+      lifeEvents: updatedLifeEvents,
+      household: householdInfo,
+    };
+    
+    localStorage.setItem(profileKey, JSON.stringify(profileData));
     
     // Reset form and close dialog
     setNewLifeEvent({ event: '', year: new Date().getFullYear().toString() });
@@ -176,7 +211,7 @@ const TwinProfile = () => {
 
   // Handle for updating event status
   const handleEventStatusChange = (id: number, status: string) => {
-    setLifeEvents(lifeEvents.map(event => {
+    const updatedLifeEvents = lifeEvents.map(event => {
       if (event.id === id) {
         return { 
           ...event, 
@@ -185,7 +220,19 @@ const TwinProfile = () => {
         };
       }
       return event;
-    }));
+    });
+    
+    setLifeEvents(updatedLifeEvents);
+    
+    // Save immediately to localStorage
+    const profileData = {
+      personal: personalInfo,
+      financial: financialProfile,
+      lifeEvents: updatedLifeEvents,
+      household: householdInfo,
+    };
+    
+    localStorage.setItem(profileKey, JSON.stringify(profileData));
   };
 
   return (
