@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ArrowRight, PlayCircle, CheckCircle, TrendingUp, Landmark, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from "sonner";
 
 type SimulationAdjustments = {
   income: number;
@@ -24,7 +25,6 @@ const ScenarioSimulator = () => {
     savings: 0,
     investmentReturn: 5,
   });
-  const [simulationResult, setSimulationResult] = useState(null);
 
   const handleAdjustmentChange = (key: keyof SimulationAdjustments, value: number) => {
     setAdjustments((prev) => ({
@@ -34,15 +34,30 @@ const ScenarioSimulator = () => {
   };
 
   const handleRunSimulation = () => {
-    const result = runScenario({
-      income: adjustments.income,
-      expenses: adjustments.expenses,
-      savings: adjustments.savings,
-      investments: { return: adjustments.investmentReturn },
+    try {
+      const result = runScenario({
+        income: adjustments.income,
+        expenses: adjustments.expenses,
+        savings: adjustments.savings,
+        investments: { return: adjustments.investmentReturn },
+      });
+      
+      setActiveScenario(result);
+      toast.success("Custom scenario created successfully!");
+      setIsCustomizing(false);
+    } catch (error) {
+      console.error("Failed to run simulation:", error);
+      toast.error("Failed to create custom scenario. Please try again.");
+    }
+  };
+
+  const handleResetForm = () => {
+    setAdjustments({
+      income: 0,
+      expenses: 0,
+      savings: 0,
+      investmentReturn: 5,
     });
-    
-    setActiveScenario(result);
-    setSimulationResult(result);
     setIsCustomizing(false);
   };
 
@@ -163,7 +178,7 @@ const ScenarioSimulator = () => {
               </div>
               
               <div className="flex items-center justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsCustomizing(false)}>
+                <Button variant="outline" onClick={handleResetForm}>
                   Cancel
                 </Button>
                 <Button onClick={handleRunSimulation}>
@@ -226,7 +241,7 @@ const ScenarioSimulator = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activeScenario.id === 'scenario-1' ? (
+            {activeScenario.id === scenarios[0].id ? (
               <>
                 <div className="rounded-lg border bg-primary/5 p-3">
                   <p className="text-sm">
@@ -239,7 +254,7 @@ const ScenarioSimulator = () => {
                   </p>
                 </div>
               </>
-            ) : activeScenario.id === 'scenario-2' ? (
+            ) : activeScenario.id === scenarios[1].id ? (
               <>
                 <div className="rounded-lg border bg-primary/5 p-3">
                   <p className="text-sm">
@@ -252,7 +267,7 @@ const ScenarioSimulator = () => {
                   </p>
                 </div>
               </>
-            ) : activeScenario.id === 'scenario-3' ? (
+            ) : activeScenario.id === scenarios[2].id ? (
               <>
                 <div className="rounded-lg border bg-primary/5 p-3">
                   <p className="text-sm">
@@ -274,7 +289,7 @@ const ScenarioSimulator = () => {
                 </div>
                 <div className="rounded-lg border bg-primary/5 p-3">
                   <p className="text-sm">
-                    Review your investment allocations to ensure they align with your target return rate of {adjustments.investmentReturn}%.
+                    Review your investment allocations to ensure they align with your target return rate of {activeScenario.adjustments.investments?.return || 0}%.
                   </p>
                 </div>
               </>

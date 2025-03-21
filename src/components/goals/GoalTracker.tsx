@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFinance } from '@/context/FinanceContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,13 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Target, CalendarDays, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from "sonner";
+
+const GOALS_STORAGE_KEY = 'financial-goals-data';
 
 const GoalTracker = () => {
-  const { goals, createGoal, updateGoal } = useFinance();
+  const { goals: contextGoals, createGoal, updateGoal } = useFinance();
+  const [goals, setGoals] = useState(contextGoals);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [contributionDialogOpen, setContributionDialogOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState('');
@@ -22,42 +26,110 @@ const GoalTracker = () => {
     deadline: '',
     category: 'Savings',
   });
+
+  // Load goals from localStorage on component mount
+  useEffect(() => {
+    const savedGoals = localStorage.getItem(GOALS_STORAGE_KEY);
+    if (savedGoals) {
+      try {
+        const parsedGoals = JSON.parse(savedGoals);
+        setGoals(parsedGoals);
+      } catch (error) {
+        console.error('Error parsing saved goals:', error);
+      }
+    } else {
+      setGoals(contextGoals);
+    }
+  }, [contextGoals]);
+
+  // Save goals to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
+    } catch (error) {
+      console.error('Error saving goals to localStorage:', error);
+    }
+  }, [goals]);
   
   const handleCreateGoal = () => {
     if (!newGoal.name || !newGoal.targetAmount || !newGoal.deadline) {
+      toast.error("Please fill in all required fields");
       return;
     }
     
-    createGoal({
-      name: newGoal.name,
-      targetAmount: Number(newGoal.targetAmount),
-      currentAmount: 0,
-      deadline: newGoal.deadline,
-      category: newGoal.category,
-    });
-    
-    // Reset form and close dialog
-    setNewGoal({
-      name: '',
-      targetAmount: '',
-      deadline: '',
-      category: 'Savings',
-    });
-    setIsDialogOpen(false);
+    try {
+      const goalToCreate = {
+        name: newGoal.name,
+        targetAmount: Number(newGoal.targetAmount),
+        currentAmount: 0,
+        deadline: newGoal.deadline,
+        category: newGoal.category,
+      };
+      
+      createGoal(goalToCreate);
+      
+      // Create a new goal with ID to add to local state
+      const createdGoal = {
+        ...goalToCreate,
+        id: `goal-${Date.now()}`,
+      };
+      
+      // Update local state
+      setGoals(prevGoals => [...prevGoals, createdGoal]);
+      
+      // Reset form and close dialog
+      setNewGoal({
+        name: '',
+        targetAmount: '',
+        deadline: '',
+        category: 'Savings',
+      });
+      
+      setIsDialogOpen(false);
+      toast.success("Goal created successfully!");
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      toast.error("Failed to create goal. Please try again.");
+    }
   };
   
   const handleContribution = () => {
     if (!contributionAmount || !selectedGoalId) {
+      toast.error("Please enter a contribution amount");
       return;
     }
     
-    updateGoal(selectedGoalId, Number(contributionAmount));
-    setContributionAmount('');
-    setContributionDialogOpen(false);
+    try {
+      const amount = Number(contributionAmount);
+      
+      if (isNaN(amount) || amount <= 0) {
+        toast.error("Please enter a valid positive amount");
+        return;
+      }
+      
+      updateGoal(selectedGoalId, amount);
+      
+      // Update local state as well
+      setGoals(prevGoals => 
+        prevGoals.map(goal => 
+          goal.id === selectedGoalId 
+            ? { ...goal, currentAmount: goal.currentAmount + amount } 
+            : goal
+        )
+      );
+      
+      setContributionAmount('');
+      setContributionDialogOpen(false);
+      toast.success(`$${amount.toLocaleString()} added to your goal!`);
+    } catch (error) {
+      console.error('Error adding contribution:', error);
+      toast.error("Failed to add contribution. Please try again.");
+    }
   };
   
   const openContributionDialog = (goalId: string) => {
     setSelectedGoalId(goalId);
+    setContributionAmount('');
     setContributionDialogOpen(true);
   };
   
